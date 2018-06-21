@@ -22,6 +22,14 @@ export default {
             cookie: cookie
         })
     },
+    register(cookie, params) {
+        return request({
+            url: XBIHOST + '/reg/check_moble.html',
+            params: params,
+            headers: { 'Content-Type': 'application/json;charset=UTF-8' },
+            cookie: cookie
+        })
+    },
     getCode(cookie) {
         return new Promise((resolve, reject) => {
             superagent.get(XBIHOST + '/ajax/verify.html?t=' + Math.random())
@@ -46,12 +54,5 @@ export default {
                     reject(err);
                 })
         })
-
-        // return request({
-        //     url: XBIHOST + '/verify/moble_reg.html',
-        //     params: params,
-        //     headers: Object.assign(headers, { 'Content-Type': 'application/json;charset=UTF-8' }),
-        //     cookie: cookie
-        // })
     }
 }

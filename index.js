@@ -8,7 +8,7 @@ var cookieParser = require('cookie-parser');
 import { request, tool } from './util';
 const bodyParser = require('body-parser');
 import sms from './sms';
-import { resolve } from 'url';
+import { getPassWord } from 'url';
 app.set('views', './views')
 app.set('view engine', 'ejs');
 app.use(bodyParser.json());
@@ -51,17 +51,21 @@ async function refreshVerify(cookie, phone) {
     })
     let isReg = await tool.checkReg(cookie, pubParams);
     let isSend = await tool.SMScode(cookie, Object.assign({}, pubParams, { type: 'sms', verify: verCode.Result }))
-    console.log(isSend, verCode.Result);
     if (!+isSend.status) refreshVerify(cookie)
     new Promise((resolve, reject) => {
         setTimeout(async () => {
+            console.log('set');
             let getVcode = await sms.getMobilenum({ action: 'getVcodeAndReleaseMobile', mobile: pubParams.moble });
             let code = getVcode.split('|')[1]
             code = code.substr(code.length - 6, 6);
+            console.log('code=',code);
             resolve(code)
         }, 30000);
     }).then(code => {
-        
+        console.log(code);
+        // return sms.register(cookie, Object.assign({}, pubParams, { moble_verify: code, password: getPassWord(10, 12), invit: 'MQ896628' }))
+    }).then(res=>{
+        // console.log(res.body);
     })
 }
 
