@@ -1,7 +1,6 @@
 import http from 'http';
 import axios from 'axios';
 const smsHOST = 'http://api.eobzz.com/';
-const XBIHOST = 'http://www.xbi.cc/';
 export default {
     getMobilenum(params) {
         return axios.get(smsHOST + 'httpApi.do?', {

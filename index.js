@@ -20,37 +20,46 @@ app.use(session({
     resave: false,
     saveUninitialized: true,
 }));
-
+let pubParams = {
+    mobles: '+86',
+}
 app.get('/', async function (req, res, next) {
     res.render('index');
     if (req.path !== "/") return;
-    if (!req.session.regCookie) {
-        let cookie = await tool.getCookie();
-        cookie = cookie.headers["set-cookie"];
-        req.session.regCookie = cookie.join(',').match(/(PHPSESSID=.+?);/)[1];
-    }
     let num = await sms.getMobilenum({
         action: 'getMobilenum'
     });
     let mft = num.data.split('|');
-    let pubParams = {
-        moble: mft[0],
-        mobles: '+86',
-    }
-    let isReg = await tool.checkReg(req.session.regCookie, pubParams);
-    let code = await tool.getCode(req.session.regCookie);
-    let filePath = './avatar.jpg';
-    let flie = fs.writeFileSync(filePath, code.body);
-    console.log(req.session.regCookie);
+    let cookie = await tool.getCookie();
+    cookie = cookie.headers["set-cookie"];
+    cookie = cookie.join(',').match(/(PHPSESSID=.+?);/)[1];
+    pubParams.moble = mft[0];
+    console.log(pubParams);
+    refreshVerify(cookie);
+})
+var count = 0;
+async function refreshVerify(cookie, phone) {
+    if ((count = count + 1) && count > 3) return (count = 0);
+    let code = await tool.getCode(cookie);
+    let filePath = './avatar.png';
+    let flie = fs.writeFileSync(filePath, code);
     let verCode = await distCode.getCode({
         'username': 'qiyi1990108',
         'password': 'qiyi1990107',
         filename: filePath
     })
-    let isSend = await tool.SMScode(req.session.regCookie, Object.assign(pubParams, { type: 'sms', verify: verCode.Result }))
-    console.log(isSend.body);
+    let isReg = await tool.checkReg(cookie, pubParams);
+    let isSend = await tool.SMScode(cookie, Object.assign({}, pubParams, { type: 'sms', verify: verCode.Result }))
+    console.log(isSend, verCode.Result);
+    if (!+isSend.status) refreshVerify(cookie)
+    console.log(pubParams.moble);
+    setTimeout(async () => {
+        let getVcode = await sms.getMobilenum({ action: 'getVcodeAndReleaseMobile', mobile: pubParams.moble })
+        console.log(getVcode.data);
+    }, 30000);
 
-})
+
+}
 
 var server = app.listen(9000, function () {
     var host = server.address().address;
