@@ -1,12 +1,13 @@
 var express = require('express');
 var app = express();
-var code = require('./code');
+var distCode = require('./code');
 const rua = require('random-useragent');
 var fs = require('fs');
 var session = require('express-session');
 var cookieParser = require('cookie-parser');
 import { request, tool } from './util';
 const bodyParser = require('body-parser');
+import sms from './sms';
 app.set('views', './views')
 app.set('view engine', 'ejs');
 app.use(bodyParser.json());
@@ -20,38 +21,39 @@ app.use(session({
     saveUninitialized: true,
 }));
 
-
-
-// var getCodeFile = function (cookie) {
-//     request({
-//         url: 'http://www.xbi.cc/ajax/verify.html' + '?t=' + Math.random(),
-//         type: 'get',
-//         headers: Object.assign(headers)
-//     }).then(res => {
-//         console.log(res);
-//     })
-// }
-
-app.use('*', async function (req, res, next) {
+app.get('/', async function (req, res, next) {
     res.render('index');
+    if (req.path !== "/") return;
     if (!req.session.regCookie) {
         let cookie = await tool.getCookie();
         cookie = cookie.headers["set-cookie"];
-        req.session.regCookie = cookie;
+        req.session.regCookie = cookie.join(',').match(/(PHPSESSID=.+?);/)[1];
     }
+    let num = await sms.getMobilenum({
+        action: 'getMobilenum'
+    });
+    let mft = num.data.split('|');
+    let pubParams = {
+        moble: mft[0],
+        mobles: '+86',
+    }
+    let isReg = await tool.checkReg(req.session.regCookie, pubParams);
+    let code = await tool.getCode(req.session.regCookie);
+    let filePath = './avatar.jpg';
+    let flie = fs.writeFileSync(filePath, code.body);
     console.log(req.session.regCookie);
+    let verCode = await distCode.getCode({
+        'username': 'qiyi1990108',
+        'password': 'qiyi1990107',
+        filename: filePath
+    })
+    let isSend = await tool.SMScode(req.session.regCookie, Object.assign(pubParams, { type: 'sms', verify: verCode.Result }))
+    console.log(isSend.body);
+
 })
 
-
-async function test(req) {
-
-
-}
-
-
-var server = app.listen(3000, function () {
+var server = app.listen(9000, function () {
     var host = server.address().address;
     var port = server.address().port;
     console.log('Example app listening at http://%s:%s', host, port);
-    // getCodeFile();
 });

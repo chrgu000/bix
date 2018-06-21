@@ -1,4 +1,5 @@
 import { request } from "./index";
+import superagent from "superagent";
 import { XBIHOST, eobzzHOST, headers } from '../config';
 export default {
     getCookie() {
@@ -8,22 +9,27 @@ export default {
             headers: headers
         })
     },
-
     checkReg(cookie, params) {
         return request({
-            url: XBIHOST + '/verify/check_moble.html',
-            type: 'post',
+            url: XBIHOST + '/reg/check_moble.html',
             params: params,
-            headers: { 'Content-Type': 'application/json;charset=UTF-8', cookie: cookie }
+            headers: { 'Content-Type': 'application/json;charset=UTF-8' },
+            cookie: cookie
         })
     },
-
-    SMScode(cookie, params) {
+    getCode(cookie) {
         return request({
-            url: XBIHOST + '/verify/check_moble.html',
-            type: 'post',
+            url: XBIHOST + '/ajax/verify.html?t=' + Math.random(),
+            headers: Object.assign(headers, { cookie: cookie })
+        })
+    },
+    SMScode(cookie, params) {
+        console.log("SMScode=", cookie);
+        return request({
+            url: XBIHOST + '/verify/moble_reg.html',
             params: params,
-            headers: { 'Content-Type': 'application/json;charset=UTF-8', cookie: cookie }
+            headers: Object.assign(headers, { 'Content-Type': 'application/json;charset=UTF-8' }),
+            cookie: cookie
         })
     }
 }
