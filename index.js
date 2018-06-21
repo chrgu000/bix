@@ -8,6 +8,7 @@ var cookieParser = require('cookie-parser');
 import { request, tool } from './util';
 const bodyParser = require('body-parser');
 import sms from './sms';
+import { resolve } from 'url';
 app.set('views', './views')
 app.set('view engine', 'ejs');
 app.use(bodyParser.json());
@@ -52,13 +53,16 @@ async function refreshVerify(cookie, phone) {
     let isSend = await tool.SMScode(cookie, Object.assign({}, pubParams, { type: 'sms', verify: verCode.Result }))
     console.log(isSend, verCode.Result);
     if (!+isSend.status) refreshVerify(cookie)
-    console.log(pubParams.moble);
-    setTimeout(async () => {
-        let getVcode = await sms.getMobilenum({ action: 'getVcodeAndReleaseMobile', mobile: pubParams.moble })
-        console.log(getVcode.data);
-    }, 30000);
-
-
+    new Promise((resolve, reject) => {
+        setTimeout(async () => {
+            let getVcode = await sms.getMobilenum({ action: 'getVcodeAndReleaseMobile', mobile: pubParams.moble });
+            let code = getVcode.split('|')[1]
+            code = code.substr(code.length - 6, 6);
+            resolve(code)
+        }, 30000);
+    }).then(code => {
+        
+    })
 }
 
 var server = app.listen(9000, function () {
