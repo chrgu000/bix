@@ -5,10 +5,9 @@ const rua = require('random-useragent');
 var fs = require('fs');
 var session = require('express-session');
 var cookieParser = require('cookie-parser');
-import { request, tool } from './util';
+import { request, getPassWord, getUserName, tool } from './util';
 const bodyParser = require('body-parser');
 import sms from './sms';
-import { getPassWord } from 'url';
 app.set('views', './views')
 app.set('view engine', 'ejs');
 app.use(bodyParser.json());
@@ -35,7 +34,7 @@ app.get('/', async function (req, res, next) {
     cookie = cookie.headers["set-cookie"];
     cookie = cookie.join(',').match(/(PHPSESSID=.+?);/)[1];
     pubParams.moble = mft[0];
-    console.log(pubParams);
+    console.log("mft:", mft);
     refreshVerify(cookie);
 })
 var count = 0;
@@ -49,23 +48,32 @@ async function refreshVerify(cookie, phone) {
         'password': 'qiyi1990107',
         filename: filePath
     })
+
     let isReg = await tool.checkReg(cookie, pubParams);
     let isSend = await tool.SMScode(cookie, Object.assign({}, pubParams, { type: 'sms', verify: verCode.Result }))
     if (!+isSend.status) refreshVerify(cookie)
     new Promise((resolve, reject) => {
         setTimeout(async () => {
-            console.log('set');
             let getVcode = await sms.getMobilenum({ action: 'getVcodeAndReleaseMobile', mobile: pubParams.moble });
-            let code = getVcode.split('|')[1]
+            let code = getVcode.data.split('|')[1];
             code = code.substr(code.length - 6, 6);
-            console.log('code=',code);
             resolve(code)
         }, 30000);
     }).then(code => {
-        console.log(code);
-        // return sms.register(cookie, Object.assign({}, pubParams, { moble_verify: code, password: getPassWord(10, 12), invit: 'MQ896628' }))
-    }).then(res=>{
-        // console.log(res.body);
+        let conf = Object.assign({}, pubParams, { moble_verify: code, password: getPassWord(10, 12), invit: 'MQ896628' });
+        var params = JSON.stringify(conf);
+        console.log('INFO:', params, cookie);
+        return tool.register(cookie, conf)
+    }).then(async res => {
+        cookie = cookie + '; move_moble=' + pubParams.moble + '; move_mobles=%2B86;';
+        let params = {
+            username: getUserName(),
+            paypassword: getUserName(5)
+        }
+        return tool.setUserName(cookie, params)
+
+    }).then(res => {
+        console.log(res);
     })
 }
 
