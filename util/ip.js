@@ -60,10 +60,11 @@ export default class ip {
             let lp = await this.checkip(ips);
             let rs = await this.refreshIP('ips', lp.ips);
             rs && await this.setUseIp([ips]);
-            return {
-                ip: lp.lineIP,
+            console.log("ipipipip=",lp.lineIp);
+            resolve({
+                proxy: "http://"+lp.lineIp,
                 userAgent: random.getRandom()
-            }
+            })
         })
     }
 

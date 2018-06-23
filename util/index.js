@@ -3,15 +3,19 @@ var superagent = require('superagent');
 require('superagent-proxy')(superagent);
 import tool from './tool';
 export function request(opts) {
+    console.log('params:',opts);
     return new Promise((resolve, reject) => {
         superagent[opts.type || 'post'](opts.url)
             .set(opts.headers)
-            .set('User-Agent', opts.userAgent)
-            .set('Cookie', opts.cookie || '')
+            // .set('User-Agent', opts.userAgent)
+            .set('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/66.0.3359.170 Safari/537.36')
+            // .set('Cookie', opts.cookie || '')
             .proxy(opts.proxy)
-            .type('form')
-            .send(opts.params || {})
+            // .type('form')
+            // .send(opts.params || {})
             .end((err, res) => {
+                console.log("=================================="+new Date().getTime());
+                console.log(res);
                 resolve(res)
             })
     })

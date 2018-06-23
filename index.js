@@ -6,7 +6,7 @@ var fs = require('fs');
 var session = require('express-session');
 var cookieParser = require('cookie-parser');
 import { getPassWord, getUserName, tool } from './util';
-import ip from './util/ip';
+import getIp from './util/ip';
 const bodyParser = require('body-parser');
 import sms from './sms';
 app.set('views', './views')
@@ -31,14 +31,17 @@ app.get('/', async function (req, res, next) {
         action: 'getMobilenum'
     });
     let mft = num.data.split('|');
-    let cookie = await tool.getCookie(params);
+    var ip = new getIp();
+    pubParams = Object.assign(pubParams, { moble: mft[0] }, await ip.getUseLineIp())
+    console.log("pubParams:", pubParams);
+    let cookie = await tool.getCookie(pubParams);
     cookie = cookie.headers["set-cookie"];
     cookie = cookie.join(',').match(/(PHPSESSID=.+?);/)[1];
-    pubParams = Object.assign(pubParams, { moble: mft[0] }, new ip().getUseLineIp())
     console.log("==============start====================")
     console.log("mft:", mft, "pubParans:", JSON.stringify(pubParams));
+    console.log("cookie", cookie);
     console.log('==============end=======================')
-    refreshVerify(cookie);
+    // refreshVerify(cookie);
 })
 var count = 0;
 async function refreshVerify(cookie, phone) {

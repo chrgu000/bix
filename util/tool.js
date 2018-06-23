@@ -15,16 +15,17 @@ function setpar(params) {
 }
 export default {
     getCookie(params) {
-        var { conf } = setpar(params);
+        var { conf, params } = setpar(params);
+        console.log("conf:", conf, params);
         return request(Object.assign({
-            url: url || XBIHOST,
+            url: params.url || 'http://ip.chinaz.com/getip.aspx',
             type: 'get',
             headers: headers,
-            cookie: cookie || ''
+            cookie: params.cookie || ''
         }, conf))
     },
     checkReg(cookie, params) {
-        var { conf } = setpar(params);
+        var { conf, params } = setpar(params);
         return request(Object.assign({
             url: XBIHOST + '/reg/check_moble.html',
             params: params,
@@ -33,7 +34,7 @@ export default {
         }, conf))
     },
     register(cookie, params) {
-        var { conf } = setpar(params);
+        var { conf, params } = setpar(params);
         return request(Object.assign({
             url: XBIHOST + '/reg/reg_up.html',
             params: params,
@@ -42,28 +43,31 @@ export default {
         }, conf))
     },
     getCode(cookie, params) {
-        var params = setpar(params);
+        var { conf, params } = setpar(params);
         return new Promise((resolve, reject) => {
-            superagent.get(XBIHOST + '/ajax/verify.html?t=' + Math.random())
+            var sa = superagent.get(XBIHOST + '/ajax/verify.html?t=' + Math.random())
                 .set("Cookie", cookie)
                 .set(headers)
-                .set('User-Agent', params.conf.userAgent)
-                .proxy(params.conf.proxy)
+                .set('User-Agent', conf.userAgent)
+                .proxy(pconf.proxy)
                 .end((err, res) => {
                     console.log("body", res.body)
                     resolve(res.body)
                     reject(err);
                 })
+            console.log("sa=", sa);
+            console.log("conf=", conf);
+            console.log("params=", params);
         })
     },
 
     setUserName(cookie, params) {
-        var params = setpar(params);
+        var { conf, params } = setpar(params);
         return new Promise((resolve, reject) => {
             var sa = superagent.post(XBIHOST + '/reg/paypassword_up.html')
                 .set("Cookie", cookie)
-                .set('User-Agent', params.conf.userAgent)
-                .proxy(params.conf.proxy)
+                .set('User-Agent', conf.userAgent)
+                .proxy(conf.proxy)
                 .type('form')
                 .send(params)
                 .end((err, res) => {
@@ -74,12 +78,12 @@ export default {
         })
     },
     SMScode(cookie, params) {
-        var params = setpar(params);
+        var { conf, params } = setpar(params);
         return new Promise((resolve, reject) => {
             superagent.post(XBIHOST + '/verify/moble_reg.html')
                 .set("Cookie", cookie)
-                .set('User-Agent', params.conf.userAgent)
-                .proxy(params.conf.proxy)
+                .set('User-Agent', conf.userAgent)
+                .proxy(conf.proxy)
                 .type('form')
                 .send(params)
                 .end((err, res) => {
