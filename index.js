@@ -5,7 +5,8 @@ const rua = require('random-useragent');
 var fs = require('fs');
 var session = require('express-session');
 var cookieParser = require('cookie-parser');
-import { request, getPassWord, getUserName, tool } from './util';
+import { getPassWord, getUserName, tool } from './util';
+import ip from './util/ip';
 const bodyParser = require('body-parser');
 import sms from './sms';
 app.set('views', './views')
@@ -30,17 +31,19 @@ app.get('/', async function (req, res, next) {
         action: 'getMobilenum'
     });
     let mft = num.data.split('|');
-    let cookie = await tool.getCookie();
+    let cookie = await tool.getCookie(params);
     cookie = cookie.headers["set-cookie"];
     cookie = cookie.join(',').match(/(PHPSESSID=.+?);/)[1];
-    pubParams.moble = mft[0];
-    console.log("mft:", mft);
+    pubParams = Object.assign(pubParams, { moble: mft[0] }, new ip().getUseLineIp())
+    console.log("==============start====================")
+    console.log("mft:", mft, "pubParans:", JSON.stringify(pubParams));
+    console.log('==============end=======================')
     refreshVerify(cookie);
 })
 var count = 0;
 async function refreshVerify(cookie, phone) {
     if ((count = count + 1) && count > 3) return (count = 0);
-    let code = await tool.getCode(cookie);
+    let code = await tool.getCode(cookie, params);
     let filePath = './avatar.png';
     let flie = fs.writeFileSync(filePath, code);
     let verCode = await distCode.getCode({
