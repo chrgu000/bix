@@ -2,6 +2,8 @@ import redis from 'redis';
 import random from 'random-useragent';
 import { headers } from '../config';
 import superagent from 'superagent';
+import superagentProxy from 'superagent-proxy';
+superagentProxy(superagent)
 export default class ip {
     constructor() {
         this.gr = this.getRedis()();
@@ -37,55 +39,61 @@ export default class ip {
     }
 
     getIps() {
-        let ip = 'http://www.66ip.cn/mo.php?sxb=&tqsl=100&port=&export=&ktip=&sxa=&submit=%CC%E1++%C8%A1&textarea=http%3A%2F%2Fwww.66ip.cn%2F%3Fsxb%3D%26tqsl%3D100%26ports%255B%255D2%3D%26ktip%3D%26sxa%3D%26radio%3Dradio%26submit%3D%25CC%25E1%2B%2B%25C8%25A1';
+        let ip = 'http://api.66daili.cn/API/GetSecretProxy/?orderid=1750854381801143031&num=20&token=66daili&format=text&line_separator=win&protocol=http&region=domestic';
         return new Promise((resolve, reject) => {
-            this.gr.hgetall('ips', (err, obj) => {
-                // console.log("ips", obj);
-                if (!obj) {
-                    superagent.get(ip).set(headers).end((error, res) => {
-                        let ipList = res.text.match(/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}:\d{1,4}/g);
-                        resolve(ipList);
-                        this.gr.hmset('ips', { ips: ipList.join(',') });
-                    })
-                } else {
-                    resolve(obj);
-                }
-            });
-
-        })
-    }
-    getUseLineIp() {
-        return new Promise(async (resolve, reject) => {
-            let ips = await this.getIps();
-            let lp = await this.checkip(ips);
-            let rs = await this.refreshIP('ips', lp.ips);
-            rs && await this.setUseIp([ips]);
-            console.log("ipipipip=",lp.lineIp);
-            resolve({
-                proxy: "http://"+lp.lineIp,
-                userAgent: random.getRandom()
+            superagent.get(ip).set(headers).end((error, res) => {
+                // console.log(err,res);
+                // console.log("getip=>", res.text);
+                // let ipList = res.text.match(/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}:\d{1,4}/g);
+                let ips = res.text.split('\r\n')
+                ips.splice(ips.length - 1, 1);
+                resolve(ips);
+                this.gr.hmset('ips', { ips: ips.join(',') });
             })
         })
     }
 
+    getUseLineIp() {
+        return new Promise(async (resolve, reject) => {
+            var findUseIP = async () => {
+                var ips = [];
+                var rst = [];
+                var ip = !ips.shift() ? (ips = await this.getIps()).shift() : ips.shift();
+                console.info('===========testIp:===============');
+                console.info('===========testIp:===============');
+                console.info('===========testIp:===============');
+                console.log("ip=====", ip)
+                superagent.get('http://ip.chinaz.com/getip.aspx').set(headers).proxy("http://" + ip).end((err, res) => {
+                    console.error("worngIp:", err);
+                    if (err) return rst.push(setTimeout(findUseIP, !ips.length ? 10000 : 0))
+                    if (res && this.checkip(ip)) {
+                        rst.forEach((v) => { clearTimeout(v) })
+                        this.setUseIp([ip]);
+                        console.warn("ip:", ip)
+                        console.warn("ip地址：", res.res.text)
+                        resolve({
+                            proxy: "http://" + ip,
+                            userAgent: random.getRandom()
+                        })
+                        console.log('清楚队列');
+                        console.log("======================endtseti=================")
+                        console.log("======================endtseti=================")
+                        console.log("======================endtseti=================")
+                    } else {
+                        rst.push(setTimeout(findUseIP, !ips.length ? 10000 : 0));
+                    }
+
+                })
+            }
+            findUseIP();
+        })
+    }
     async checkip(ips) {
-        let ipsArr = ips.ips.split(',');
         let useip = await this.getUseIp();
         let useips = useip.useip;
         var matchIp = (ip) => {
-            return useips && useips.split(',').indexOf(ip) !== -1 ? matchIp(ipsArr.shift()) : ip;
+            return useips && useips.split(',').indexOf(ip) !== -1 ? false : ip;
         }
-        return { lineIp: matchIp(ipsArr.shift()), ips: ipsArr };
-    }
-    refreshIP(key, rval) {
-        let obj = {};
-        return new Promise((resolve, reject) => {
-            this.gr.del(key, (err, reply) => {
-                if (err) return resolve({ type: false })
-                obj[key] = rval.join(',')
-                this.gr.hmset(key, obj);
-                resolve({ type: true })
-            })
-        })
+        return matchIp(ips);
     }
 }

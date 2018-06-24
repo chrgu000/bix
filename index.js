@@ -27,26 +27,33 @@ let pubParams = {
 app.get('/', async function (req, res, next) {
     res.render('index');
     if (req.path !== "/") return;
+    console.log(10000000);
+
     let num = await sms.getMobilenum({
         action: 'getMobilenum'
     });
+    console.log("num=", num.data);
     let mft = num.data.split('|');
     var ip = new getIp();
-    pubParams = Object.assign(pubParams, { moble: mft[0] }, await ip.getUseLineIp())
-    console.log("pubParams:", pubParams);
-    let cookie = await tool.getCookie(pubParams);
+    var conf = await ip.getUseLineIp();
+    let mp = Object.assign(pubParams, { moble: mft[0] }, conf)
+    console.log('ppppppp', mp.proxy);
+    let cookie = await tool.getCookie(mp);
+    // console.log('cookie====',cookie)
     cookie = cookie.headers["set-cookie"];
     cookie = cookie.join(',').match(/(PHPSESSID=.+?);/)[1];
     console.log("==============start====================")
-    console.log("mft:", mft, "pubParans:", JSON.stringify(pubParams));
-    console.log("cookie", cookie);
+    console.log("mft:", mft, "conf:", conf, "pubParans:", JSON.stringify(pubParams));
+    console.log('cookie', cookie);
     console.log('==============end=======================')
-    // refreshVerify(cookie);
+    refreshVerify(cookie);
 })
 var count = 0;
 async function refreshVerify(cookie, phone) {
     if ((count = count + 1) && count > 3) return (count = 0);
-    let code = await tool.getCode(cookie, params);
+    console.log("123456", pubParams);
+
+    let code = await tool.getCode(cookie, pubParams);
     let filePath = './avatar.png';
     let flie = fs.writeFileSync(filePath, code);
     let verCode = await distCode.getCode({
@@ -66,7 +73,7 @@ async function refreshVerify(cookie, phone) {
             resolve(code)
         }, 30000);
     }).then(code => {
-        let conf = Object.assign({}, pubParams, { moble_verify: code, password: getPassWord(10, 12), invit: 'MQ896628' });
+        let conf = Object.assign({}, pubParams, { moble_verify: code, password: getUserName(), invit: 'EK862314' });
         var params = JSON.stringify(conf);
         console.log('INFO:', params, cookie);
         return tool.register(cookie, conf)
@@ -76,7 +83,7 @@ async function refreshVerify(cookie, phone) {
             username: getUserName(),
             paypassword: getUserName(5)
         }
-        return tool.setUserName(cookie, params)
+        return tool.setUserName(cookie, Object.assign(params, pubParams))
 
     }).then(res => {
         console.log(res);

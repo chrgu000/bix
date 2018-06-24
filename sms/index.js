@@ -3,6 +3,7 @@ import axios from 'axios';
 const smsHOST = 'http://api.eobzz.com/';
 export default {
     getMobilenum(params) {
+        console.log(params);
         return axios.get(smsHOST + 'httpApi.do?', {
             params: Object.assign({}, {
                 pid: '57218',
