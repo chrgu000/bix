@@ -2,6 +2,7 @@
 var superagent = require('superagent');
 require('superagent-proxy')(superagent);
 import tool from './tool';
+import {identity} from './identity';
 export function request(opts) {
     return new Promise((resolve, reject) => {
         superagent[opts.type || 'post'](opts.url)
@@ -61,5 +62,6 @@ export function getPassWord(min, max) {
     return newArr.join("");
 }
 export {
-    tool
+    tool,
+    identity
 }

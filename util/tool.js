@@ -77,6 +77,39 @@ export default {
                 })
         })
     },
+    startlogin(cookie, params) {
+        var { conf, params } = setpar(params, 'startlogin');
+        return new Promise((resolve, reject) => {
+            superagent.post(XBIHOST + '/login/up_login.html')
+                .set("Cookie", cookie)
+                .set('User-Agent', conf.userAgent)
+                .proxy(conf.proxy)
+                .type('form')
+                .send(params)
+                .end((err, res) => {
+                    resolve(res.body)
+                    reject(err);
+                })
+        })
+        // 
+    },
+    identity() {
+        var { conf, params } = setpar(params, 'identity');
+        return new Promise((resolve, reject) => {
+            superagent.post(XBIHOST + '/user/truename_upII')
+                .set("Cookie", conf.cookie)
+                .set('User-Agent', conf.userAgent)
+                .proxy(conf.proxy)
+                .type('form')
+                .send(params)
+                .end((err, res) => {
+                    resolve(res.body)
+                    reject(err);
+                })
+        })
+
+    },
+    
     SMScode(cookie, params) {
         var { conf, params } = setpar(params, 'SMScode');
         return new Promise((resolve, reject) => {

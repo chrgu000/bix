@@ -5,9 +5,10 @@ const rua = require('random-useragent');
 var fs = require('fs');
 var session = require('express-session');
 var cookieParser = require('cookie-parser');
-import { getPassWord, getUserName, tool } from './util';
+import { getPassWord, identity, getUserName, tool } from './util';
 import getIp from './util/ip';
 const bodyParser = require('body-parser');
+import colors from 'colors';
 import sms from './sms';
 app.set('views', './views')
 app.set('view engine', 'ejs');
@@ -49,22 +50,23 @@ app.get('/', async function (req, res, next) {
     refreshVerify(cookie);
 })
 var count = 0;
-async function refreshVerify(cookie, phone) {
-    if ((count = count + 1) && count > 3) return (count = 0);
-    console.log("123456", pubParams);
-
+async function getVerCode(cookie) {
     let code = await tool.getCode(cookie, pubParams);
     let filePath = './avatar.png';
     let flie = fs.writeFileSync(filePath, code);
-    let verCode = await distCode.getCode({
+    return await distCode.getCode({
         'username': 'qiyi1990108',
         'password': 'qiyi1990107',
         filename: filePath
     })
-
-    let isReg = await tool.checkReg(cookie, pubParams);
+}
+async function refreshVerify(cookie, phone) {
+    if ((count = count + 1) && count > 3) return (count = 0);
+    let verCode = await getVerCode(cookie);
+    // let isReg = await tool.checkReg(cookie, pubParams);
     let isSend = await tool.SMScode(cookie, Object.assign({}, pubParams, { type: 'sms', verify: verCode.Result }))
-    if (!+isSend.status) refreshVerify(cookie)
+    console.log('isSend', cookie, verCode, isSend)
+    if (!+isSend.status) return refreshVerify(cookie)
     new Promise((resolve, reject) => {
         setTimeout(async () => {
             let getVcode = await sms.getMobilenum({ action: 'getVcodeAndReleaseMobile', mobile: pubParams.moble });
@@ -84,8 +86,10 @@ async function refreshVerify(cookie, phone) {
             paypassword: getUserName(5)
         }
         return tool.setUserName(cookie, Object.assign(params, pubParams))
+    }).then(async res => {
+        // tool.startlogin(cookie, Object.assign({ verify:getVerCode()}, pubParams))
 
-    }).then(res => {
+        // tool.identity(cookie,Object.assign({}))
         console.log(res);
     })
 }
@@ -93,5 +97,17 @@ async function refreshVerify(cookie, phone) {
 var server = app.listen(9000, function () {
     var host = server.address().address;
     var port = server.address().port;
+    fs.readFile('./ignore/useIdentity.json', 'utf-8', async function (err, data) {
+        if (err) return console.log(err);
+        var isUseIt = JSON.parse(data);
+        let it = await identity();
+        var cid = () => {
+            let id = it.shift().split(',');
+            return isUseIt[id[1]] ? cid() : (isUseIt[id[1]] = { truename: id[0], idcardtype: '身份证', idcard: id[1] });
+        }
+        var cp = cid();
+        console.log(cp);
+        return fs.writeFileSync('./ignore/useIdentity.json', JSON.stringify(isUseIt))
+    })
     console.log('Example app listening at http://%s:%s', host, port);
 });
