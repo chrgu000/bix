@@ -10,6 +10,7 @@ import getIp from './util/ip';
 const bodyParser = require('body-parser');
 import colors from 'colors';
 import sms from './sms';
+import { fail } from 'assert';
 app.set('views', './views')
 app.set('view engine', 'ejs');
 app.use(bodyParser.json());
@@ -25,11 +26,10 @@ app.use(session({
 let pubParams = {
     mobles: '+86',
 }
+let pwd = {};
 app.get('/', async function (req, res, next) {
     res.render('index');
     if (req.path !== "/") return;
-    console.log(10000000);
-
     let num = await sms.getMobilenum({
         action: 'getMobilenum'
     });
@@ -60,12 +60,35 @@ async function getVerCode(cookie) {
         filename: filePath
     })
 }
+
+
+async function getuserinfo() {
+    console.log('======get========= ')
+    return new Promise((resolve, reject) => {
+        console.log("GETUSERINFO");
+        fs.readFile('./cache/useIdentity.json', 'utf-8', async function (err, data) {
+            if (err) return console.log(err);
+            var isUseIt = JSON.parse(data);
+            let it = await identity();
+            var cid = () => {
+                let id = it.shift().split(',');
+                return isUseIt[id[1]] ? cid() : (isUseIt[id[1]] = { truename: id[0], idcardtype: '身份证', idcard: id[1] });
+            }
+            var cp = cid();
+            resolve(cp);
+            console.log("身份信息：".red, colors.cyan(cp));
+            fs.writeFileSync('./cache/useIdentity.json', JSON.stringify(isUseIt))
+        })
+    })
+}
+
 async function refreshVerify(cookie, phone) {
     if ((count = count + 1) && count > 3) return (count = 0);
+
     let verCode = await getVerCode(cookie);
     // let isReg = await tool.checkReg(cookie, pubParams);
     let isSend = await tool.SMScode(cookie, Object.assign({}, pubParams, { type: 'sms', verify: verCode.Result }))
-    console.log('isSend', cookie, verCode, isSend)
+    console.log('破解验证码：'.red, cookie, verCode, isSend)
     if (!+isSend.status) return refreshVerify(cookie)
     new Promise((resolve, reject) => {
         setTimeout(async () => {
@@ -73,11 +96,12 @@ async function refreshVerify(cookie, phone) {
             let code = getVcode.data.split('|')[1];
             code = code.substr(code.length - 6, 6);
             resolve(code)
-        }, 30000);
+        }, 40000);
     }).then(code => {
-        let conf = Object.assign({}, pubParams, { moble_verify: code, password: getUserName(), invit: 'EK862314' });
+        pwd.password = getUserName();
+        let conf = Object.assign({}, pubParams, { moble_verify: code, password: pwd.password, invit: 'EK862314' });
         var params = JSON.stringify(conf);
-        console.log('INFO:', params, cookie);
+        console.log('注册信息'.red, colors.green(params), colors.red(cookie));
         return tool.register(cookie, conf)
     }).then(async res => {
         cookie = cookie + '; move_moble=' + pubParams.moble + '; move_mobles=%2B86;';
@@ -87,27 +111,25 @@ async function refreshVerify(cookie, phone) {
         }
         return tool.setUserName(cookie, Object.assign(params, pubParams))
     }).then(async res => {
-        // tool.startlogin(cookie, Object.assign({ verify:getVerCode()}, pubParams))
-
-        // tool.identity(cookie,Object.assign({}))
-        console.log(res);
+        let gsi = await getuserinfo();
+        console.log(gsi);
+        let verCode = await getVerCode(cookie)
+        console.log(verCode);
+        let sl = await tool.startlogin(cookie, Object.assign({ verify: verCode.Result, password: pwd.password }, pubParams))
+        var ide = sl.status ? await tool.identity(cookie, Object.assign(pubParams, gsi)) : { info: '身份认证失败，请重试～！' }
+        console.log('=======================注册结束==========='.red)
+        console.log('========================================'.red)
+        console.log('========================================'.red)
+        console.log(sl, ide);
+        console.log('========================================'.red)
+        console.log('========================================'.red)
+        console.log('========================================'.red)
     })
 }
 
 var server = app.listen(9000, function () {
     var host = server.address().address;
     var port = server.address().port;
-    fs.readFile('./ignore/useIdentity.json', 'utf-8', async function (err, data) {
-        if (err) return console.log(err);
-        var isUseIt = JSON.parse(data);
-        let it = await identity();
-        var cid = () => {
-            let id = it.shift().split(',');
-            return isUseIt[id[1]] ? cid() : (isUseIt[id[1]] = { truename: id[0], idcardtype: '身份证', idcard: id[1] });
-        }
-        var cp = cid();
-        console.log(cp);
-        return fs.writeFileSync('./ignore/useIdentity.json', JSON.stringify(isUseIt))
-    })
+
     console.log('Example app listening at http://%s:%s', host, port);
 });

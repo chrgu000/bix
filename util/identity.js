@@ -1,8 +1,6 @@
 import superagent from "superagent";
 import cheerio from "cheerio";
 import { headers } from '../config';
-
-
 export function identity() {
     return new Promise((resolve, rejects) => {
         var identityObj = [];

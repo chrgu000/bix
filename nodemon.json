@@ -1,4 +1,4 @@
 {
     "verbose": true,
-    "ignore": ["ignore", "node_modules/**/node_modules"]
+    "ignore": ["cache", "node_modules/**/node_modules"]
   }

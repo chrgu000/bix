@@ -73,6 +73,7 @@ export default {
                 .send(params)
                 .end((err, res) => {
                     resolve(res.body)
+                    console.log('注册信息'.red, colors.magenta(res.body))
                     reject(err);
                 })
         })
@@ -87,29 +88,32 @@ export default {
                 .type('form')
                 .send(params)
                 .end((err, res) => {
+                    console.log('sl====>'.red,res.body);
                     resolve(res.body)
                     reject(err);
                 })
         })
         // 
     },
-    identity() {
+    identity(cookie, params) {
         var { conf, params } = setpar(params, 'identity');
         return new Promise((resolve, reject) => {
+            console.log("idenf:".red,cookie, conf, params)
             superagent.post(XBIHOST + '/user/truename_upII')
-                .set("Cookie", conf.cookie)
+                .set("Cookie", cookie)
                 .set('User-Agent', conf.userAgent)
                 .proxy(conf.proxy)
                 .type('form')
                 .send(params)
                 .end((err, res) => {
+                    console.log('tool', "身份认证:".red, err, res.body);
                     resolve(res.body)
                     reject(err);
                 })
         })
 
     },
-    
+
     SMScode(cookie, params) {
         var { conf, params } = setpar(params, 'SMScode');
         return new Promise((resolve, reject) => {
